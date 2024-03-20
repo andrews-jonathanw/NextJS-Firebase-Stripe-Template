@@ -1,0 +1,34 @@
+import { getFirestore, getDocs, collection, query, where } from 'firebase/firestore';
+import '../../firebase/firebase';
+
+const fetchProducts = async () => {
+  const firestore = getFirestore();
+
+  try {
+    const q = query(collection(firestore, 'products'),
+                    where('active', '==', true));
+    const productsQuerySnapshot = await getDocs(q);
+    const products = [];
+
+    for (const productDoc of productsQuerySnapshot.docs) {
+      const productData = productDoc.data();
+      const pricesQuerySnapshot = await getDocs(collection(productDoc.ref, 'prices'));
+      const prices = pricesQuerySnapshot.docs.map(priceDoc => ({
+        id: priceDoc.id,
+        ...priceDoc.data()
+      }));
+      products.push({
+        id: productDoc.id,
+        ...productData,
+        prices
+      });
+    }
+
+    return products;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+};
+
+export default fetchProducts;
